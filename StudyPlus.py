@@ -152,9 +152,9 @@ class StudyPlus:
             raise StudyPlusUserNotFoundError from None
         next = r.json()["next"]
         while True:
-            time.sleep(1)
+            time.sleep(0.1)
             r = requests.get(
-                f"https://api.studyplus.jp/2/timeline_feeds/user/{ID}?until={self.next}", cookies=self.cookies, headers=self.headers)
+                f"https://api.studyplus.jp/2/timeline_feeds/user/{ID}?until={next}", cookies=self.cookies, headers=self.headers)
             if r.status_code == 200:
                 return_list += [l for l in [list(i.values())[1]["event_id"] if "feed_type" in i else (lambda: None)()
                                             for i in r.json()["feeds"]] if l != None]
@@ -239,12 +239,21 @@ class StudyPlus:
         return return_list
 
     def like(self, event_id):
-        r = requests.post(
-            f"https://api.studyplus.jp/2/timeline_events/{event_id}/likes/like", cookies=self.cookies, headers=self.headers)
-        if r.status_code == 200:
-            return True
-        else:
-            raise StudyPlusLikeError from None
+        if isinstance(event_id, str):
+            r = requests.post(
+                f"https://api.studyplus.jp/2/timeline_events/{event_id}/likes/like", cookies=self.cookies, headers=self.headers)
+            if r.status_code == 200:
+                return True
+            else:
+                raise StudyPlusLikeError from None
+        elif isinstance(event_id, list):
+            for i in event_id:
+                r = requests.post(
+                    f"https://api.studyplus.jp/2/timeline_events/{i}/likes/like", cookies=self.cookies, headers=self.headers)
+                if r.status_code == 200:
+                    time.sleep(1)
+                else:
+                    raise StudyPlusLikeError from None
 
 
 class StudyPlusException(Exception):
@@ -300,3 +309,4 @@ if __name__ == "__main__":
     # タイムラインIDからいいねを実行
     TimeLineID = ""
     studyplus.like(TimeLineID)
+
